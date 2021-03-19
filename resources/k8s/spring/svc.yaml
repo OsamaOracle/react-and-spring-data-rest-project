@@ -1,0 +1,17 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: spring
+    tier: front
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+
+
+    

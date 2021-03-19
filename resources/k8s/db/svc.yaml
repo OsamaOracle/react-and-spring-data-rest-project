@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-svc
+  labels:
+    app: spring
+    tier: db
+spec:
+  ports:
+    - port: 1521
+  selector:
+    app: spring
+    tier: db
+  clusterIP: None
