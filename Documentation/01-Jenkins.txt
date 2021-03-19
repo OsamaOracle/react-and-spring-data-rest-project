@@ -1,0 +1,64 @@
+Step 1: Install Java
+====================
+$ sudo apt update
+$ sudo apt install openjdk-8-jdk
+
+Step 3: Install Jenkins Long Term Support release
+=================================================
+$ wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | sudo apt-key add -
+$ sudo sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > \
+    /etc/apt/sources.list.d/jenkins.list'
+$ sudo apt-get update
+$ sudo apt-get install jenkins
+$ sudo systemctl start jenkins
+$ sudo systemctl status jenkins
+
+Step 4: Modify Firewall to Allow Jenkins
+========================================
+$ sudo ufw allow 8080
+## In the default UFW, if you haven’t configured the firewall it displays as inactive. You can enable UFW using the following:
+$ sudo ufw enable
+
+Step 4: Set up Jenkins
+======================
+## To launch and set up Jenkins, open a web browser, and navigate to the IP address of your server:
+http://ip_address_or_domain:8080
+## You should see a page that prompts you to Unlock Jenkins. You’ll need the default password. You can get the default password by switching to a command line and entering the following:
+$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+## Next, you are prompted to either Install suggested plugins or Select plugins to install. It’s fine to simply install the suggested plugins. 
+## You can always install more plugins later. The system continues the initial Jenkins setup.
+## Then you will be prompted to Create First Admin User. Enter the credentials you want to use for your Jenkins administrator, then Save and Continue.
+## now, let's create credintials for GitHub Account and Docker Hub account
+## go to Manage Jenkins => Manage Credentials => Add Credentials => kind: username and password and add credentials of GitHub accoount
+## add another credentials for Docker hub but of kind secret text and ID will be docker_pass and the secret will be the password of your account on docker hub
+
+Step 4: Set up Jenkins to connect to the Kubernetes cluster
+==========================================
+$ mkdir ~jenkins/.kube
+$ cd /tmp
+$ curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+$ chmod +x ./kubectl
+$ sudo mv ./kubectl /usr/local/bin/kubectl
+## we need to copy credentials of Kubernetes under the home directory of user Jenkins
+$ sudo cp ~/.kube/config ~jenkins/.kube/
+$ sudo chown -R jenkins: ~jenkins/.kube/
+$ source <(kubectl completion bash)
+$ kubectl get nodes
+
+Step 5: install Docker on the Jenkins Server
+======================================================
+$ curl -fsSL https://get.docker.com -o get-docker.sh
+$ sudo sh get-docker.sh
+$ sudo groupadd docker
+$ sudo usermod -aG docker jenkins
+$ newgrp docker 
+## Log out and log back in so that your group membership is re-evaluated.
+## create an new job in jenkins: new item => pipeline => add the credentials of your scm account and the url of scm and then apply and save
+
+
+
+
+
+
+
+

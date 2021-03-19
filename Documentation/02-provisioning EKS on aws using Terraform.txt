@@ -1,0 +1,103 @@
+## We will use a docker container to package all dependencies so we don't need to install anything in our machines
+$ cd resources/terraform
+$ docker run -it --rm -v ${PWD}:/work -w /work --entrypoint /bin/sh amazon/aws-cli:2.0.43
+$ yum install -y jq gzip nano tar git unzip wget
+## go to amazon dashboard => My Account => My Security Credentials => Access Keys => Create New Access Key 
+$ aws configure
+it will ask for access key and secret access key also
+## Default region name: ap-southeast-2
+## Default output format: json
+## now you are authenticated with aws
+## now lets install terraform in our container
+$ curl -o /tmp/terraform.zip -LO https://releases.hashicorp.com/terraform/0.13.1/terraform_0.13.1_linux_amd64.zip
+$ unzip /tmp/terraform.zip
+$ chmod +x terraform && mv terraform /usr/local/bin/
+$ terraform
+## now terraform will allow us to describe everything in multiple files and piece them together
+## we have described some variables as inputs, describe a security group for our infrastructure, describe a vpc network and subnets, 
+## describe an eks cluster with with an auto-scaling working group for our nodes
+## variables.tf file allow us to pass external configurations to our terraform file like the region and the cluster_name
+## main.tf file holds our whole infrastructure for terraform, in this file we will describe everything for our infrastructure
+
+## output.tf file defines the output configuration.
+$ terraform init
+## this will download all modules and plugins in our terraform files
+## now we have initialized our terraform files 
+$ terrafor plan 
+## to get an idea of what terraform will do when we apply this template
+## terraform will check the states as terraform has its own state database and it will compare everything we are trying to apply to the actual infratructure
+## we now see everything that terraform will create
+## and now to deploy this infrastructure
+$ terraform apply
+## and after it finish, we have an eks cluster deployed 
+$ terraform state list
+## to list all the resources have been deployed
+## to get the kubeconfig file
+$ terraform output kubeconfig ~/.kube/config 
+$ aws eks update-kubeconfig --name eks-cluster --region ap-southeast-2
+## let's install kubectl
+$ curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+$ chmod +x ./kubectl
+$ mv ./kubectl /usr/local/bin/kubectl
+$ kubectl get nodes
+## if we get an error aws-iam-authenticator not found so we need to install it now
+$ curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/aws-iam-authenticator
+$ chmod +x ./aws-iam-authenticator
+$ sudo mv aws-iam-authenticator /usr/local/bin
+$ aws-iam-authenticator version
+## now try again
+$ kubectl get nodes  
+## to clean up everything 
+$ terraform destroy
+$ terraform state list
+===========================================================
+provisioning Jenkins into EC2 instance using terraform    +
+===========================================================
+## before running terraform to provision ec2 instance, you need to create puplice an private keys from aws console
+## so you can ssh on this Jenkins server from your laptop 
+## in aws console EC2 => Network & Security => key pairs => create key pair of type pem for Linux an MacOS and ppk for Windows OS with the name "jenkins-key"
+$ cd resources/terraform-jenkins
+$ terraform init
+$ terraform plan
+$ terraform apply
+## Terraform apply will also output the IP address of the Jenkins CI server.
+## Terraform will provision an AWS EC2 instance and install git, Apache Maven, Docker, Java 8, and Jenkins.
+## Using a browser, open the page at http://jenkins_ip_address:8080; the Jenkins admin page will be displayed:
+## Using the AWS Cloud9 shell terminal, log in to the Jenkins CI server, find the Administrator password by running the following command:
+$ sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+## Enter this Administrator password on the Jenkins Console by pasting it into the input box, and click Next. Click Install suggested plugin.
+## Configure Jenkins
+1. Plugins:
+## Log in to the Jenkins console, click Manage Jenkins → Manage Plugins → Available. 
+## Choose and install Docker plugin and GitHub Integration Plugin, then restart Jenkins by clicking the Restart Jenkins check box.
+2. Credentials:
+## Docker Hub: Click Credentials → global → Add Credentials, choose secret text as Kind, enter the Docker Hub username and password and use docker_pass for ID.
+## GitHub: Click Credentials → Global → Add Credentials , choose Username with password as Kind, enter the GitHub username and password and use gitHubCredentials for ID.
+## Configure the Jenkins job and pipeline
+## From the Jenkins console, click New item. Choose Pipeline, name it spring for example and click OK.
+## Choose GitHub and from the drop-down select the GitHub credentials. Enter the GitHub URL and click Save to save the Jenkins job.
+## The Jenkins build executor will check out and scan the GitHub repository and execute the stages in the pipeline as laid out in the Jenkinsfile. 
+## Make sure that you replace the DockerID "osamazx" with your DockerID inside the Jenkinsfile and deployment.yaml.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

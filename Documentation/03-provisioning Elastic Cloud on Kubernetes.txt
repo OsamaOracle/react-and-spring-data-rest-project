@@ -1,0 +1,91 @@
+# Install custom resource definitions and the elastic operator with its RBAC rules 
+$ kubectl apply -f https://download.elastic.co/downloads/eck/1.2.1/all-in-one.yaml
+$ kubectl get all -n elastic-system
+# Apply an Elasticsearch cluster specification, with one Elasticsearch node:
+# we need to create a pv and pvc for elasticsearch
+
+$ cd resources/k8s/eck/
+$ kubectl apply -f pv-es.yaml
+$ kubectl apply -f pvc-es.yaml
+$ kubectl apply -f elasticsearch.yaml
+$ kubectl get customresourcedefinitions
+$ kubectl get elasticsearch
+$ kubectl get kibana
+
+# so now elasticsearch and kibana are valid kubernetes resources and can be deployed using elasticsearch operator
+# A default user named elastic is automatically created with the password stored in a Kubernetes secret:
+$ PASSWORD=$(kubectl get secret quickstart-es-elastic-user -o go-template='{{.data.elastic | base64decode}}')
+$ echo $PASSWORD
+# to set our oun password:
+$ echo  'P@ssw0rd' |  base64
+# then edit the secret: data.elastic: 
+$ kubectl edit secret quickstart-es-elastic-user
+# deploy a Kibana instance 
+$ kubectl apply -f kibana.yaml
+$ kubectl get kibana
+# we can access kibana using a nodeport service by editing the ClusterIP Service quickstart-kb-http
+$ kubectl edit service quickstart-kb-http
+# then change spec.type to NodePort and the add spec.ports.nodePort: 32061  
+# now we can access kibana dashboard from the browser https://(node_IP}:30561 with user elastic and $PASSWORD
+--------------------------------------------------------------------------------------------------------------
+# now let's deploy Filebeat as a DaemonSet to ensure there’s a running instance on each node of the cluster.
+$ curl -L -O https://raw.githubusercontent.com/elastic/beats/master/deploy/kubernetes/filebeat-kubernetes.yaml
+# we should change the namespace to the name space where we deploy kibana and elasticsearch
+$ sed 's/kube-system/default/g' filebeat-kubernetes.yaml  > filebeat-kubernetes-default.yaml
+# to use ssl certificate to connect to the elasticsearch we will make some modifications
+# under the configmap of the filebeat under the output.elasticsearch we will add an option
+ssl.certificate_authorities:
+  - /etc/certificate/ca.crt
+# then under the deamonset we need to create a volumemount and volume from that secret "quickstart-es-http-certs-public"
+# under volumes
+- name: certs
+  secret:
+    secretName: quickstart-es-http-certs-public
+# then we need to mount that secret under the filebeat container
+# under volumemounts
+- name: certs
+  mountPath: /etc/certificate/ca.crt
+  readOnly: true
+  subPath: ca.crt
+# as filebeat needs to talk to elasticsearch so we need to give it the name of the elasticsearch service 	
+# under deamonset under env 
+# change the value of the ELASTICSEARCH_HOST to https://quickstart-es-http
+# change the value of the ELASTICSEARCH_PASSWORD to the $ echo $PASSWORD
+$ kubectl apply -f filebeat-kubernetes-default.yaml
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

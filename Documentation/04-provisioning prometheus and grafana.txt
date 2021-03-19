@@ -1,0 +1,86 @@
+## prometheus it is a monitoring tool 
+## grafana: is a visualization tool that collects the metrics from prometheus and then visualize it.
+## we need to install helm first to user helm charts for prometheus and grafana
+# download Download Helm 2.16.10 binaries on your workstation and tiller component on the Kubernetes cluster
+$ cd /tmp
+$ wget  https://get.helm.sh/helm-v2.16.10-linux-amd64.tar.gz
+$ tar -zxvf helm-v2.16.10-linux-amd64.tar.gz	
+# Find the helm binary in the unpacked directory, and move it to its desired destination 
+$ sudo mv linux-amd64/helm /usr/local/bin/helm
+$ which helm
+$ helm version --short --client
+# create tiller service account 
+$  kubectl create -n kube-system serviceaccount tiller
+# then create clusterrolebinding tiller and give it cluster-admin then attach it to the tiller service account 
+$ kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
+$ helm init --service-account tiller
+## let's a add the repo containing the helm charts for prometheus and grafana that we need to deploy 
+helm repo add loki https://grafana.github.io/loki/charts
+helm repo add stable https://charts.helm.sh/stable
+
+for prometheus:
+===============
+$ helm inspect values stable/prometheus > /tmp/prometheus.values
+## we need to change the service type of prometheus to be nodeport so we can access it useing the puplic ip of the worker node
+$ vi /tmp/prometheus.values
+
+:set nu
+line 929 under server:  change 
+type: NodePort
+nodeport: 31531
+## create a namespace to deploy prometheus
+$ kubectl create ns prometheus
+$ helm install stable/prometheus --name prometheus --values /tmp/prometheus.values --namespace prometheus
+or 
+$ helm install prometheus stable/prometheus --values /tmp/prometheus.values --namespace prometheus
+
+$watch -x kubectl get all -n prometheus
+$ kubectl get all -n prometheus
+
+## once its state is running we can access prometheus using
+http://{node_IP}:32322
+
+
+grafana:
+========
+$ helm inspect values stable/grafana > /tmp/grafana.values
+$ vi /tmp/grafana.values
+
+service:
+  type: NodePort
+  nodePort: 32323
+
+persistence:
+  type: pvc
+  enabled: true
+
+
+## Administrator credentials when not using an existing secret (see below)
+adminUser: admin
+adminPassword: P@ssw0rd
+
+$ helm install  stable/grafana --name grafana --values /tmp/grafana.values  --namespace grafana
+or $ helm install grafana  stable/grafana --values /tmp/grafana.values  --namespace grafana
+
+
+$ watch -x kubectl get all -n grafana
+$ helm list -n grafana
+
+http://{node_IP}:32323
+
+username: admin
+password: P@ssw0rd
+
+## create new data source
+## select prometheus
+## put prometheus url and change access to browser then save
+
+## go to: https://grafana.com/grafana/dashboards
+1.select data source : prometheus
+2.take the id of any dashboard you want
+3.go to grafana cosole select import from + in the left of the home , press load and
+ select data source prometheus
+4. 11074 ,, 8588 ,, 1860 
+ 
+
+
