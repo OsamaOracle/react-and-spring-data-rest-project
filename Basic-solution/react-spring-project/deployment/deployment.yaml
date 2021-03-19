@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: react-java-deployment
+  labels:
+    app: react-java
+spec:
+  selector:
+    matchLabels:
+      app: react-java
+  template:
+    metadata:
+      labels:
+        app: react-java
+    spec:
+      containers:
+      - name: react-java
+        image: Osamazx/react-java:7
+        ports:
+        - containerPort: 8080
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
